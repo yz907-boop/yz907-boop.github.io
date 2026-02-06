@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finless Porpoise Protector - A River Conservation Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        danger: '#EF4444',
+                        info: '#60A5FA',
+                        background: '#EFF6FF',
+                        accent: '#F59E0B'
+                    },
+                    fontFamily: {
+                        sans: ['Comic Sans MS', 'Arial', 'sans-serif'],
+                    },
+                    animation: {
+                        'bounce-slow': 'bounce 2s infinite',
+                        'swim': 'swim 3s ease-in-out infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        swim: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
+                            '50%': { transform: 'translateY(-10px) rotate(5deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+            .text-shadow-lg {
+                text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+            }
+            .water-bg {
+                background: linear-gradient(to bottom, #93C5FD, #3B82F6);
+            }
+            .game-container {
+                position: relative;
+                overflow: hidden;
+                border-radius: 1rem;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            }
+            .btn-3d {
+                position: relative;
+                transition: all 0.2s ease;
+                transform: translateY(-4px);
+                box-shadow: 0 4px 0 0 rgba(0, 0, 0, 0.3);
+            }
+            .btn-3d:active {
+                transform: translateY(0);
+                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.3);
+            }
+            .btn-3d:hover {
+                transform: translateY(-6px);
+                box-shadow: 0 6px 0 0 rgba(0, 0, 0, 0.3);
+            }
+            .bubble {
+                position: absolute;
+                background-color: rgba(255, 255, 255, 0.7);
+                border-radius: 50%;
+                animation: rise 3s infinite ease-in;
+            }
+            @keyframes rise {
+                0% {
+                    transform: translateY(0) scale(0);
+                    opacity: 0;
+                }
+                10% {
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(-100vh) scale(1);
+                    opacity: 0;
+                }
+            }
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen font-sans">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-primary">
+        <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/f68128563b5c4308919183636c403ec4~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=uvBxhHSloMLkwVcpCvIdvTCBim8%3D" 
+             alt="Finless Porpoise" class="w-40 h-40 object-contain animate-bounce-slow">
+        <h2 class="text-3xl font-bold text-white mt-4 text-shadow">Loading Game...</h2>
+        <div class="mt-6 w-64 h-4 bg-white bg-opacity-30 rounded-full overflow-hidden">
+            <div id="loading-bar" class="h-full bg-secondary rounded-full" style="width: 0%"></div>
+        </div>
+        <p class="mt-2 text-white text-sm">Learning about finless porpoises...</p>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-5xl font-bold text-primary text-shadow">Finless Porpoise Protector</h1>
+            <p class="text-xl text-gray-600 mt-2">Help protect these endangered river dolphins!</p>
+        </header>
+
+        <!-- Game Container -->
+        <div class="game-container bg-white rounded-xl shadow-xl p-4 mb-8">
+            <!-- Game Screen - Hidden by default -->
+            <div id="game-screen" class="hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center">
+                        <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/f68128563b5c4308919183636c403ec4~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=uvBxhHSloMLkwVcpCvIdvTCBim8%3D" 
+                             alt="Porpoise Icon" class="w-10 h-10 mr-2">
+                        <div>
+                            <p class="text-sm text-gray-600">Score</p>
+                            <p id="score-display" class="text-2xl font-bold text-primary">0</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div>
+                            <p class="text-sm text-gray-600">Health</p>
+                            <div class="w-32 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="health-bar" class="h-full bg-secondary rounded-full" style="width: 100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <div>
+                            <p class="text-sm text-gray-600">Time</p>
+                            <p id="time-display" class="text-2xl font-bold text-primary">60</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Game Canvas -->
+                <div class="relative">
+                    <canvas id="game-canvas" class="w-full h-96 bg-blue-100 rounded-lg"></canvas>
+                    
+                    <!-- Game Overlay - Initially Hidden -->
+                    <div id="game-overlay" class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+                        <div class="bg-white p-6 rounded-xl text-center max-w-md">
+                            <h3 class="text-2xl font-bold text-primary mb-2">Game Paused</h3>
+                            <button id="resume-btn" class="bg-secondary text-white px-6 py-2 rounded-lg btn-3d mr-2">Resume</button>
+                            <button id="restart-btn" class="bg-primary text-white px-6 py-2 rounded-lg btn-3d">Restart</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Game Controls -->
+                <div class="flex justify-between mt-4">
+                    <button id="pause-btn" class="bg-gray-500 text-white px-4 py-2 rounded-lg btn-3d">
+                        <i class="fa fa-pause mr-1"></i> Pause
+                    </button>
+                    <div class="flex space-x-2">
+                        <button id="sound-btn" class="bg-gray-500 text-white px-4 py-2 rounded-lg btn-3d">
+                            <i class="fa fa-volume-up mr-1"></i> Sound On
+                        </button>
+                        <button id="help-btn" class="bg-info text-white px-4 py-2 rounded-lg btn-3d">
+                            <i class="fa fa-question-circle mr-1"></i> Help
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Screen -->
+            <div id="start-screen" class="water-bg rounded-xl p-8 text-center">
+                <div class="flex justify-center mb-6">
+                    <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/f68128563b5c4308919183636c403ec4~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=uvBxhHSloMLkwVcpCvIdvTCBim8%3D" 
+                         alt="Finless Porpoise" class="w-40 h-40 object-contain animate-swim">
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-4 text-shadow-lg">Welcome to Finless Porpoise Protector!</h2>
+                <p class="text-white mb-6 max-w-2xl mx-auto">
+                    Help the finless porpoise survive in the Yangtze River by collecting food and avoiding pollution.
+                    Learn about these amazing creatures and what threatens their survival.
+                </p>
+                <div class="flex justify-center space-x-4">
+                    <button id="play-btn" class="bg-secondary text-white px-8 py-3 rounded-lg text-xl font-bold btn-3d">
+                        <i class="fa fa-play mr-2"></i> Play Game
+                    </button>
+                    <button id="learn-btn" class="bg-info text-white px-8 py-3 rounded-lg text-xl font-bold btn-3d">
+                        <i class="fa fa-book mr-2"></i> Learn More
+                    </button>
+                </div>
+            </div>
+
+            <!-- Learning Screen -->
+            <div id="learning-screen" class="hidden p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-primary">Finless Porpoise Facts</h2>
+                    <button id="back-from-learn-btn" class="bg-gray-500 text-white px-4 py-2 rounded-lg btn-3d">
+                        <i class="fa fa-arrow-left mr-1"></i> Back
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-primary mb-2">About Finless Porpoises</h3>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li>Finless porpoises are small toothed whales that live in the Yangtze River.</li>
+                            <li>They are called "finless" because they don't have a dorsal fin like other dolphins.</li>
+                            <li>Instead, they have a low ridge covered in thick skin with tiny bumps.</li>
+                            <li>They can grow up to 2.27 meters (7.4 feet) long and weigh up to 72 kg (159 pounds).</li>
+                            <li>They are sometimes called "river pigs" in Chinese (江豚 - jiāng tún).</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-primary mb-2">What They Eat</h3>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li>Finless porpoises are carnivores and eat mainly fish.</li>
+                            <li>They also eat shrimp and other small river creatures.</li>
+                            <li>They use echolocation to find their food in the murky river water.</li>
+                            <li>Overfishing in the Yangtze River reduces their food supply.</li>
+                        </ul>
+                        <img src="https://p11-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/7bae968a4f594543aefe1b522f9b5423~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=OXFi6PnqsqIZAX%2Bt2doS3t5pZBQ%3D" 
+                             alt="Fish and Shrimp" class="w-full h-32 object-contain mt-2">
+                    </div>
+                    
+                    <div class="bg-red-50 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-danger mb-2">Threats They Face</h3>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><strong>Pollution:</strong> Chemicals and plastic waste in the river harm porpoises.</li>
+                            <li><strong>Overfishing:</strong> Reduces their food supply and they can get caught in nets.</li>
+                            <li><strong>Boat Traffic:</strong> Collisions with ships and underwater noise pollution.</li>
+                            <li><strong>Dams:</strong> Block migration routes and change river conditions.</li>
+                            <li><strong>Habitat Loss:</strong> Development along the river destroys their living spaces.</li>
+                        </ul>
+                        <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/effdaeecff694c908013d37b2b948602~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=w%2FG6jR51gTRbhdEflHm%2FfgxIyG4%3D" 
+                             alt="Water Pollution" class="w-full h-32 object-contain mt-2">
+                    </div>
+                    
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h3 class="text-xl font-bold text-secondary mb-2">How We Can Help</h3>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li>Support laws that protect the Yangtze River and its wildlife.</li>
+                            <li>Reduce plastic use to prevent pollution in rivers and oceans.</li>
+                            <li>Support sustainable fishing practices.</li>
+                            <li>Learn more about finless porpoises and share what you know.</li>
+                            <li>Donate to conservation organizations working to protect them.</li>
+                        </ul>
+                        <div class="mt-4 bg-white p-3 rounded-lg border border-green-200">
+                            <p class="text-center font-bold text-secondary">Did you know?</p>
+                            <p class="text-sm text-gray-600">The Yangtze finless porpoise is critically endangered with only about 1,000 individuals remaining in the wild. Conservation efforts have helped stabilize their population in recent years.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Screen -->
+            <div id="help-screen" class="hidden p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-primary">How to Play</h2>
+                    <button id="close-help-btn" class="bg-gray-500 text-white px-4 py-2 rounded-lg btn-3d">
+                        <i class="fa fa-times mr-1"></i> Close
+                    </button>
+                </div>
+                
+                <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                    <h3 class="text-xl font-bold text-primary mb-2">Game Controls</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <h4 class="font-bold">Desktop:</h4>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li>Use <strong>arrow keys</strong> or <strong>WASD</strong> to move the porpoise</li>
+                                <li>Press <strong>Spacebar</strong> to pause the game</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-bold">Mobile:</h4>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li>Touch and drag on the screen to move the porpoise</li>
+                                <li>Tap the pause button to pause the game</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-green-50 p-4 rounded-lg mb-4">
+                    <h3 class="text-xl font-bold text-secondary mb-2">Game Objectives</h3>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li><strong>Collect food:</strong> Catch fish and shrimp to earn points</li>
+                        <li><strong>Avoid pollution:</strong> Stay away from plastic bags, bottles, and toxic waste</li>
+                        <li><strong>Answer questions:</strong> Sometimes you'll get quiz questions about finless porpoises - answer correctly for bonus points!</li>
+                        <li><strong>Survive:</strong> Protect your health and survive as long as possible</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-yellow-50 p-4 rounded-lg">
+                    <h3 class="text-xl font-bold text-accent mb-2">Tips for Success</h3>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>Move smoothly and avoid sudden changes in direction</li>
+                        <li>Focus on collecting food first, then avoiding obstacles</li>
+                        <li>Watch out for floating plastic bags - they're tricky to avoid!</li>
+                        <li>Learn about finless porpoises to answer quiz questions correctly</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div id="quiz-screen" class="hidden">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-bold text-primary mb-4">Finless Porpoise Quiz!</h3>
+                    <p id="quiz-question" class="text-lg mb-4">Question will appear here</p>
+                    
+                    <div id="quiz-options" class="space-y-2 mb-6">
+                        <!-- Options will be inserted here by JavaScript -->
+                    </div>
+                    
+                    <div id="quiz-feedback" class="hidden mb-4 p-3 rounded-lg">
+                        <!-- Feedback will be inserted here -->
+                    </div>
+                    
+                    <div class="flex justify-between">
+                        <button id="skip-quiz-btn" class="bg-gray-500 text-white px-4 py-2 rounded-lg btn-3d">
+                            Skip Question
+                        </button>
+                        <button id="next-question-btn" class="bg-primary text-white px-4 py-2 rounded-lg btn-3d hidden">
+                            Next Question
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Over Screen -->
+            <div id="game-over-screen" class="hidden">
+                <div class="bg-white p-6 rounded-xl shadow-lg text-center">
+                    <h3 class="text-3xl font-bold text-danger mb-2">Game Over</h3>
+                    <p class="text-gray-600 mb-4">Your finless porpoise adventure has ended</p>
+                    
+                    <div class="flex justify-center items-center mb-6">
+                        <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/f68128563b5c4308919183636c403ec4~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=uvBxhHSloMLkwVcpCvIdvTCBim8%3D" 
+                             alt="Finless Porpoise" class="w-32 h-32 object-contain">
+                    </div>
+                    
+                    <div class="bg-blue-50 p-4 rounded-lg mb-6">
+                        <h4 class="font-bold text-lg mb-2">Your Results:</h4>
+                        <p class="text-xl"><strong>Score:</strong> <span id="final-score">0</span></p>
+                        <p class="text-lg"><strong>Time Survived:</strong> <span id="time-survived">0</span> seconds</p>
+                        <p class="text-lg"><strong>Food Collected:</strong> <span id="food-collected">0</span></p>
+                        <p class="text-lg"><strong>Quiz Questions Answered:</strong> <span id="quiz-answered">0</span>/<span id="quiz-total">0</span></p>
+                    </div>
+                    
+                    <div class="flex justify-center space-x-4">
+                        <button id="play-again-btn" class="bg-secondary text-white px-6 py-3 rounded-lg text-lg font-bold btn-3d">
+                            <i class="fa fa-refresh mr-2"></i> Play Again
+                        </button>
+                        <button id="back-to-menu-btn" class="bg-primary text-white px-6 py-3 rounded-lg text-lg font-bold btn-3d">
+                            <i class="fa fa-home mr-2"></i> Back to Menu
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conservation Research Highlights -->
+        <div class="bg-green-50 rounded-xl p-6 mb-8">
+            <h2 class="text-2xl font-bold text-secondary mb-4">Conservation Research Highlights</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-bold text-lg mb-2 text-primary">Current Status</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li>Less than 1,200 Yangtze finless porpoises remain in the wild</li>
+                        <li>Current population is only half of what it was in the 1990s</li>
+                        <li>60% of the Yangtze's natural floodplains have been degraded or lost</li>
+                        <li>Listed as critically endangered on the IUCN Red List</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-bold text-lg mb-2 text-danger">Major Threats</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li>Habitat degradation from dams and river regulation</li>
+                        <li>Water pollution from industrial and agricultural runoff</li>
+                        <li>High-density shipping causing noise pollution and collisions</li>
+                        <li>Overfishing reducing food supply</li>
+                        <li>Extreme drought affecting water levels and prey availability</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-bold text-lg mb-2 text-secondary">Conservation Efforts</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li>10-year fishing ban in the Yangtze River</li>
+                        <li>Protected areas and nature reserves</li>
+                        <li>Yangtze finless porpoises rescue action plan (2026-2035)</li>
+                        <li>Artificial breeding and reintroduction programs</li>
+                        <li>Monitoring and research initiatives</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="font-bold text-lg mb-2 text-info">How You Can Help</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li>Reduce plastic use to prevent pollution</li>
+                        <li>Support sustainable fishing practices</li>
+                        <li>Learn about and spread awareness of the species</li>
+                        <li>Support organizations working on Yangtze conservation</li>
+                        <li>Advocate for policies that protect freshwater ecosystems</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-gray-500 text-sm">
+            <p>© 2025 Finless Porpoise Protector - An Educational Game</p>
+            <p class="mt-1">Created to raise awareness about the conservation of Yangtze finless porpoises</p>
+            <div class="mt-4 flex justify-center space-x-4">
+                <a href="#" class="text-primary hover:underline">Privacy Policy</a>
+                <a href="#" class="text-primary hover:underline">Terms of Service</a>
+                <a href="#" class="text-primary hover:underline">Contact Us</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="bg-music" loop>
+        <source src="https://assets.mixkit.co/music/preview/mixkit-underwater-ambient-119.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="eat-sound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-bubble-tone-alert-notification-2316.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="hurt-sound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="quiz-sound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-question-mark-notification-966.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="success-sound">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Game State
+        const gameState = {
+            currentScreen: 'start',
+            score: 0,
+            health: 100,
+            time: 60,
+            gameRunning: false,
+            soundEnabled: true,
+            foodCollected: 0,
+            quizAnswered: 0,
+            quizCorrect: 0,
+            quizTotal: 0,
+            lastQuizTime: 0
+        };
+
+        // Game Objects
+        const gameObjects = {
+            porpoise: {
+                x: 0,
+                y: 0,
+                width: 60,
+                height: 60,
+                speed: 5,
+                moving: { up: false, down: false, left: false, right: false }
+            },
+            foods: [],
+            obstacles: [],
+            bubbles: []
+        };
+
+        // Game Constants
+        const GAME_CONSTANTS = {
+            CANVAS_WIDTH: 800,
+            CANVAS_HEIGHT: 450,
+            FOOD_SPAWN_RATE: 60, // frames
+            OBSTACLE_SPAWN_RATE: 90, // frames
+            BUBBLE_SPAWN_RATE: 30, // frames
+            QUIZ_INTERVAL: 20000, // milliseconds
+            FOOD_TYPES: [
+                { name: 'fish1', points: 10, image: 'https://p11-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/7bae968a4f594543aefe1b522f9b5423~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=OXFi6PnqsqIZAX%2Bt2doS3t5pZBQ%3D' },
+                { name: 'fish2', points: 15, image: 'https://p11-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/7bae968a4f594543aefe1b522f9b5423~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=OXFi6PnqsqIZAX%2Bt2doS3t5pZBQ%3D' },
+                { name: 'shrimp', points: 5, image: 'https://p11-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/7bae968a4f594543aefe1b522f9b5423~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=OXFi6PnqsqIZAX%2Bt2doS3t5pZBQ%3D' }
+            ],
+            OBSTACLE_TYPES: [
+                { name: 'plastic-bag', damage: 10, image: 'https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/effdaeecff694c908013d37b2b948602~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=w%2FG6jR51gTRbhdEflHm%2FfgxIyG4%3D' },
+                { name: 'bottle', damage: 5, image: 'https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/effdaeecff694c908013d37b2b948602~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=w%2FG6jR51gTRbhdEflHm%2FfgxIyG4%3D' },
+                { name: 'toxic-waste', damage: 20, image: 'https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/effdaeecff694c908013d37b2b948602~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=w%2FG6jR51gTRbhdEflHm%2FfgxIyG4%3D' }
+            ],
+            QUIZ_QUESTIONS: [
+                {
+                    question: "How many Yangtze finless porpoises are estimated to remain in the wild today?",
+                    options: [
+                        "Less than 1,200",
+                        "Over 5,000",
+                        "Around 10,000",
+                        "Less than 100"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The Yangtze finless porpoise is critically endangered with less than 1,200 individuals remaining in the wild according to recent surveys."
+                },
+                {
+                    question: "What is the main reason for the decline of Yangtze finless porpoises?",
+                    options: [
+                        "Habitat degradation from dams, pollution, and shipping",
+                        "Natural predators",
+                        "Climate change affecting water temperature",
+                        "Lack of food sources"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The porpoise's decline reflects Yangtze's ecological degradation from dams, pollution, and shipping activities."
+                },
+                {
+                    question: "What percentage of the Yangtze's natural floodplains have been degraded or lost?",
+                    options: [
+                        "60%",
+                        "20%",
+                        "80%",
+                        "10%"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "60% of the Yangtze's natural floodplains have been degraded or lost according to studies on riparian wetland evolution."
+                },
+                {
+                    question: "Which of these is NOT a major threat to finless porpoises?",
+                    options: [
+                        "Natural predators like sharks",
+                        "Ship collisions and underwater noise",
+                        "Fishing gear entanglement",
+                        "Extreme drought affecting water levels"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "While finless porpoises face many human-induced threats, natural predators like sharks are not a significant threat in their freshwater habitat."
+                },
+                {
+                    question: "What is the goal of the Yangtze finless porpoises rescue action plan (2026-2035)?",
+                    options: [
+                        "Restoring river-lake connectivity and setting up seasonal navigation-restricted zones",
+                        "Moving all porpoises to aquariums",
+                        "Introducing new food sources",
+                        "Building more dams to create protected areas"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "The plan focuses on restoring river-lake connectivity, setting up seasonal navigation-restricted zones in core habitats, and enforcing fishing bans."
+                },
+                {
+                    question: "Why are finless porpoises considered an 'indicator species'?",
+                    options: [
+                        "Their health reflects the overall condition of the Yangtze ecosystem",
+                        "They can predict changes in weather patterns",
+                        "They indicate the presence of fish schools",
+                        "They show migration patterns of other species"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "As an indicator species, the finless porpoise's health and population status reflects the overall condition of the Yangtze River ecosystem."
+                },
+                {
+                    question: "What impact do dams have on finless porpoise populations?",
+                    options: [
+                        "They fragment habitats and block gene flow between populations",
+                        "They create ideal swimming conditions",
+                        "They increase food availability",
+                        "They reduce water pollution"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "Hydraulic projects fragment habitats and block gene flow between porpoise populations, making it harder for them to breed and maintain genetic diversity."
+                },
+                {
+                    question: "How has the population of Yangtze finless porpoises changed compared to the 1990s?",
+                    options: [
+                        "Current numbers are only half of those in the 1990s",
+                        "Populations have fully recovered",
+                        "Numbers have remained stable",
+                        "There are now three times as many porpoises"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "Although there has been a recent increase, the current population is only half of what it was in the 1990s."
+                },
+                {
+                    question: "What role do finless porpoises play in the ecosystem?",
+                    options: [
+                        "They help maintain balance by controlling fish populations",
+                        "They purify the water by filtering pollutants",
+                        "They create habitats for other species",
+                        "They help disperse plant seeds"
+                    ],
+                    correctAnswer: 0,
+                    explanation: "As predators, finless porpoises help maintain balance in the ecosystem by controlling fish populations."
+                },
+                {
+                    question: "What is the significance of the 10-year fishing ban in the Yangtze River?",
+                    options: [
+                        "It helps restore fish populations that porpoises depend on for food",
+                        "It prevents porpoises from being caught accidentally",
+                        "It allows researchers to study porpoises without disturbance",
+                        "All of the above"
+                    ],
+                    correctAnswer: 3,
+                    explanation: "The 10-year fishing ban helps restore fish populations, prevents accidental catch of porpoises, and allows for better research and monitoring."
+                }
+            ]
+        };
+
+        // DOM Elements
+        const elements = {
+            loadingScreen: document.getElementById('loading-screen'),
+            loadingBar: document.getElementById('loading-bar'),
+            startScreen: document.getElementById('start-screen'),
+            gameScreen: document.getElementById('game-screen'),
+            learningScreen: document.getElementById('learning-screen'),
+            helpScreen: document.getElementById('help-screen'),
+            quizScreen: document.getElementById('quiz-screen'),
+            gameOverScreen: document.getElementById('game-over-screen'),
+            gameCanvas: document.getElementById('game-canvas'),
+            scoreDisplay: document.getElementById('score-display'),
+            healthBar: document.getElementById('health-bar'),
+            timeDisplay: document.getElementById('time-display'),
+            gameOverlay: document.getElementById('game-overlay'),
+            quizQuestion: document.getElementById('quiz-question'),
+            quizOptions: document.getElementById('quiz-options'),
+            quizFeedback: document.getElementById('quiz-feedback'),
+            finalScore: document.getElementById('final-score'),
+            timeSurvived: document.getElementById('time-survived'),
+            foodCollected: document.getElementById('food-collected'),
+            quizAnswered: document.getElementById('quiz-answered'),
+            quizTotal: document.getElementById('quiz-total'),
+            
+            // Audio elements
+            bgMusic: document.getElementById('bg-music'),
+            eatSound: document.getElementById('eat-sound'),
+            hurtSound: document.getElementById('hurt-sound'),
+            quizSound: document.getElementById('quiz-sound'),
+            successSound: document.getElementById('success-sound')
+        };
+
+        // Game Images
+        const images = {
+            porpoise: new Image(),
+            background: new Image(),
+            foodImages: [],
+            obstacleImages: []
+        };
+        images.porpoise.src = 'https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/rc/pc/super_tool/f68128563b5c4308919183636c403ec4~tplv-a9rns2rl98-image.image?lk3s=8e244e95&rcl=202602051223540635190A2CAD9206E8E3&rrcfp=f06b921b&x-expires=1772857456&x-signature=uvBxhHSloMLkwVcpCvIdvTCBim8%3D';
+        images.background.src = 'https://p3-doubao-search-sign.byteimg.com/labis/395dfa8f1ad760495b870fcf88f846c7~tplv-be4g95zd3a-image.jpeg?lk3s=feb11e32&x-expires=1785816948&x-signature=9I6n%2Feiq9nv4TloQ6bkNfBPBkp0%3D';
+
+        // Load food images
+        GAME_CONSTANTS.FOOD_TYPES.forEach(food => {
+            const img = new Image();
+            img.src = food.image;
+            images.foodImages.push(img);
+        });
+
+        // Load obstacle images
+        GAME_CONSTANTS.OBSTACLE_TYPES.forEach(obstacle => {
+            const img = new Image();
+            img.src = obstacle.image;
+            images.obstacleImages.push(img);
+        });
+
+        // Game Canvas Setup
+        const canvas = elements.gameCanvas;
+        const ctx = canvas.getContext('2d');
+        canvas.width = GAME_CONSTANTS.CANVAS_WIDTH;
+        canvas.height = GAME_CONSTANTS.CANVAS_HEIGHT;
+
+        // Game Variables
+        let animationFrameId;
+        let gameLoopInterval;
+        let timeInterval;
+        let frameCount = 0;
+        let lastTime = 0;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let currentQuiz = null;
+        let mobileMoveActive = false;
+
+        // Initialize Game
+        function initGame() {
+            // Simulate loading
+            let progress = 0;
+            const loadingInterval = setInterval(() => {
+                progress += 5;
+                elements.loadingBar.style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(loadingInterval);
+                    setTimeout(() => {
+                        elements.loadingScreen.classList.add('hidden');
+                        showScreen('start');
+                    }, 500);
+                }
+            }, 100);
+
+            // Setup event listeners
+            setupEventListeners();
+        }
+
+        // Setup Event Listeners
+        function setupEventListeners() {
+            // Keyboard controls
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+            
+            // Touch controls
+            canvas.addEventListener('touchstart', handleTouchStart);
+            canvas.addEventListener('touchmove', handleTouchMove);
+            canvas.addEventListener('touchend', handleTouchEnd);
+            
+            // Button click handlers
+            document.getElementById('play-btn').addEventListener('click', startGame);
+            document.getElementById('learn-btn').addEventListener('click', () => showScreen('learning'));
+            document.getElementById('back-from-learn-btn').addEventListener('click', () => showScreen('start'));
+            document.getElementById('help-btn').addEventListener('click', () => showScreen('help'));
+            document.getElementById('close-help-btn').addEventListener('click', () => showScreen('game'));
+            document.getElementById('pause-btn').addEventListener('click', togglePause);
+            document.getElementById('resume-btn').addEventListener('click', togglePause);
+            document.getElementById('restart-btn').addEventListener('click', restartGame);
+            document.getElementById('sound-btn').addEventListener('click', toggleSound);
+            document.getElementById('play-again-btn').addEventListener('click', startGame);
+            document.getElementById('back-to-menu-btn').addEventListener('click', () => showScreen('start'));
+            document.getElementById('skip-quiz-btn').addEventListener('click', skipQuiz);
+            document.getElementById('next-question-btn').addEventListener('click', nextQuestion);
+        }
+
+        // Keyboard Event Handlers
+        function handleKeyDown(e) {
+            if (!gameState.gameRunning) return;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    gameObjects.porpoise.moving.up = true;
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    gameObjects.porpoise.moving.down = true;
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    gameObjects.porpoise.moving.left = true;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    gameObjects.porpoise.moving.right = true;
+                    break;
+                case ' ':
+                    togglePause();
+                    break;
+            }
+        }
+
+        function handleKeyUp(e) {
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    gameObjects.porpoise.moving.up = false;
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    gameObjects.porpoise.moving.down = false;
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    gameObjects.porpoise.moving.left = false;
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    gameObjects.porpoise.moving.right = false;
+                    break;
+            }
+        }
+
+        // Touch Event Handlers
+        function handleTouchStart(e) {
+            if (!gameState.gameRunning) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            mobileMoveActive = true;
+        }
+
+        function handleTouchMove(e) {
+            if (!gameState.gameRunning || !mobileMoveActive) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            const touchX = touch.clientX;
+            const touchY = touch.clientY;
+            
+            // Calculate the center of the canvas
+            const canvasRect = canvas.getBoundingClientRect();
+            const canvasCenterX = canvasRect.left + canvasRect.width / 2;
+            const canvasCenterY = canvasRect.top + canvasRect.height / 2;
+            
+            // Calculate the new position for the porpoise
+            // The porpoise follows the touch but stays within canvas bounds
+            let newX = (touchX - canvasRect.left) - gameObjects.porpoise.width / 2;
+            let newY = (touchY - canvasRect.top) - gameObjects.porpoise.height / 2;
+            
+            // Keep porpoise within canvas bounds
+            newX = Math.max(0, Math.min(newX, canvas.width - gameObjects.porpoise.width));
+            newY = Math.max(0, Math.min(newY, canvas.height - gameObjects.porpoise.height));
+            
+            // Update porpoise position
+            gameObjects.porpoise.x = newX;
+            gameObjects.porpoise.y = newY;
+        }
+
+        function handleTouchEnd(e) {
+            e.preventDefault();
+            mobileMoveActive = false;
+        }
+
+        // Screen Management
+        function showScreen(screenName) {
+            // Hide all screens
+            elements.startScreen.classList.add('hidden');
+            elements.gameScreen.classList.add('hidden');
+            elements.learningScreen.classList.add('hidden');
+            elements.helpScreen.classList.add('hidden');
+            elements.quizScreen.classList.add('hidden');
+            elements.gameOverScreen.classList.add('hidden');
+            
+            // Show the requested screen
+            switch(screenName) {
+                case 'start':
+                    elements.startScreen.classList.remove('hidden');
+                    break;
+                case 'game':
+                    elements.gameScreen.classList.remove('hidden');
+                    break;
+                case 'learning':
+                    elements.learningScreen.classList.remove('hidden');
+                    break;
+                case 'help':
+                    elements.helpScreen.classList.remove('hidden');
+                    break;
+                case 'quiz':
+                    elements.quizScreen.classList.remove('hidden');
+                    break;
+                case 'gameOver':
+                    elements.gameOverScreen.classList.remove('hidden');
+                    break;
+            }
+            
+            gameState.currentScreen = screenName;
+        }
+
+        // Game Functions
+        function startGame() {
+            // Reset game state
+            gameState.score = 0;
+            gameState.health = 100;
+            gameState.time = 60;
+            gameState.gameRunning = true;
+            gameState.foodCollected = 0;
+            gameState.quizAnswered = 0;
+            gameState.quizCorrect = 0;
+            gameState.quizTotal = 0;
+            gameState.lastQuizTime = Date.now();
+            
+            // Reset game objects
+            gameObjects.porpoise.x = canvas.width / 2 - gameObjects.porpoise.width / 2;
+            gameObjects.porpoise.y = canvas.height / 2 - gameObjects.porpoise.height / 2;
+            gameObjects.porpoise.moving = { up: false, down: false, left: false, right: false };
+            gameObjects.foods = [];
+            gameObjects.obstacles = [];
+            gameObjects.bubbles = [];
+            
+            // Update UI
+            updateUI();
+            
+            // Show game screen
+            showScreen('game');
+            
+            // Start game loop
+            if (gameState.soundEnabled) {
+                elements.bgMusic.play();
+            }
+            
+            lastTime = Date.now();
+            frameCount = 0;
+            gameLoop();
+            
+            // Start time countdown
+            timeInterval = setInterval(() => {
+                if (gameState.gameRunning) {
+                    gameState.time--;
+                    updateUI();
+                    
+                    if (gameState.time <= 0) {
+                        endGame();
+                    }
+                }
+            }, 1000);
+        }
+
+        function gameLoop() {
+            if (!gameState.gameRunning) return;
+            
+            const currentTime = Date.now();
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+            
+            // Update game objects
+            updateGameObjects(deltaTime);
+            
+            // Check for collisions
+            checkCollisions();
+            
+            // Draw game
+            drawGame();
+            
+            // Check if it's time for a quiz
+            if (currentTime - gameState.lastQuizTime > GAME_CONSTANTS.QUIZ_INTERVAL && !currentQuiz) {
+                showQuiz();
+                gameState.lastQuizTime = currentTime;
+            }
+            
+            // Request next frame
+            frameCount++;
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function updateGameObjects(deltaTime) {
+            // Move porpoise based on keyboard input
+            if (gameObjects.porpoise.moving.up) {
+                gameObjects.porpoise.y -= gameObjects.porpoise.speed;
+            }
+            if (gameObjects.porpoise.moving.down) {
+                gameObjects.porpoise.y += gameObjects.porpoise.speed;
+            }
+            if (gameObjects.porpoise.moving.left) {
+                gameObjects.porpoise.x -= gameObjects.porpoise.speed;
+            }
+            if (gameObjects.porpoise.moving.right) {
+                gameObjects.porpoise.x += gameObjects.porpoise.speed;
+            }
+            
+            // Keep porpoise within canvas bounds
+            gameObjects.porpoise.x = Math.max(0, Math.min(gameObjects.porpoise.x, canvas.width - gameObjects.porpoise.width));
+            gameObjects.porpoise.y = Math.max(0, Math.min(gameObjects.porpoise.y, canvas.height - gameObjects.porpoise.height));
+            
+            // Spawn food
+            if (frameCount % GAME_CONSTANTS.FOOD_SPAWN_RATE === 0) {
+                spawnFood();
+            }
+            
+            // Spawn obstacles
+            if (frameCount % GAME_CONSTANTS.OBSTACLE_SPAWN_RATE === 0) {
+                spawnObstacle();
+            }
+            
+            // Spawn bubbles
+            if (frameCount % GAME_CONSTANTS.BUBBLE_SPAWN_RATE === 0) {
+                spawnBubble();
+            }
+            
+            // Update food positions
+            gameObjects.foods.forEach(food => {
+                food.y += food.speed;
+            });
+            
+            // Update obstacle positions
+            gameObjects.obstacles.forEach(obstacle => {
+                obstacle.y += obstacle.speed;
+            });
+            
+            // Update bubble positions
+            gameObjects.bubbles.forEach(bubble => {
+                bubble.y -= bubble.speed;
+                bubble.life -= deltaTime;
+            });
+            
+            // Remove off-screen objects
+            gameObjects.foods = gameObjects.foods.filter(food => food.y < canvas.height);
+            gameObjects.obstacles = gameObjects.obstacles.filter(obstacle => obstacle.y < canvas.height);
+            gameObjects.bubbles = gameObjects.bubbles.filter(bubble => bubble.life > 0 && bubble.y > -bubble.radius);
+        }
+
+        function checkCollisions() {
+            // Check collisions between porpoise and food
+            gameObjects.foods.forEach((food, index) => {
+                if (isColliding(gameObjects.porpoise, food)) {
+                    // Play eat sound
+                    if (gameState.soundEnabled) {
+                        elements.eatSound.currentTime = 0;
+                        elements.eatSound.play();
+                    }
+                    
+                    // Add points
+                    gameState.score += food.points;
+                    gameState.foodCollected++;
+                    
+                    // Remove food
+                    gameObjects.foods.splice(index, 1);
+                    
+                    // Update UI
+                    updateUI();
+                }
+            });
+            
+            // Check collisions between porpoise and obstacles
+            gameObjects.obstacles.forEach((obstacle, index) => {
+                if (isColliding(gameObjects.porpoise, obstacle)) {
+                    // Play hurt sound
+                    if (gameState.soundEnabled) {
+                        elements.hurtSound.currentTime = 0;
+                        elements.hurtSound.play();
+                    }
+                    
+                    // Reduce health
+                    gameState.health -= obstacle.damage;
+                    
+                    // Remove obstacle
+                    gameObjects.obstacles.splice(index, 1);
+                    
+                    // Update UI
+                    updateUI();
+                    
+                    // Check game over condition
+                    if (gameState.health <= 0) {
+                        endGame();
+                    }
+                }
+            });
+        }
+
+        function isColliding(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        function drawGame() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background
+            ctx.drawImage(images.background, 0, 0, canvas.width, canvas.height);
+            
+            // Draw porpoise
+            ctx.drawImage(images.porpoise, gameObjects.porpoise.x, gameObjects.porpoise.y, gameObjects.porpoise.width, gameObjects.porpoise.height);
+            
+            // Draw food
+            gameObjects.foods.forEach(food => {
+                ctx.drawImage(images.foodImages[food.type], food.x, food.y, food.width, food.height);
+            });
+            
+            // Draw obstacles
+            gameObjects.obstacles.forEach(obstacle => {
+                ctx.drawImage(images.obstacleImages[obstacle.type], obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            });
+            
+            // Draw bubbles
+            gameObjects.bubbles.forEach(bubble => {
+                ctx.beginPath();
+                ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${bubble.opacity})`;
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
+        function spawnFood() {
+            const foodType = Math.floor(Math.random() * GAME_CONSTANTS.FOOD_TYPES.length);
+            const food = GAME_CONSTANTS.FOOD_TYPES[foodType];
+            
+            const newFood = {
+                type: foodType,
+                x: Math.random() * (canvas.width - 40),
+                y: -40,
+                width: 40,
+                height: 40,
+                speed: 1 + Math.random() * 2,
+                points: food.points
+            };
+            
+            gameObjects.foods.push(newFood);
+        }
+
+        function spawnObstacle() {
+            const obstacleType = Math.floor(Math.random() * GAME_CONSTANTS.OBSTACLE_TYPES.length);
+            const obstacle = GAME_CONSTANTS.OBSTACLE_TYPES[obstacleType];
+            
+            const newObstacle = {
+                type: obstacleType,
+                x: Math.random() * (canvas.width - 50),
+                y: -50,
+                width: 50,
+                height: 50,
+                speed: 1 + Math.random() * 1.5,
+                damage: obstacle.damage
+            };
+            
+            gameObjects.obstacles.push(newObstacle);
+        }
+
+        function spawnBubble() {
+            const newBubble = {
+                x: Math.random() * canvas.width,
+                y: canvas.height,
+                radius: 2 + Math.random() * 6,
+                speed: 0.5 + Math.random() * 1.5,
+                opacity: 0.3 + Math.random() * 0.7,
+                life: 2000 + Math.random() * 2000
+            };
+            
+            gameObjects.bubbles.push(newBubble);
+        }
+
+        function showQuiz() {
+            // Pause game
+            gameState.gameRunning = false;
+            
+            // Select random quiz question
+            const quizIndex = Math.floor(Math.random() * GAME_CONSTANTS.QUIZ_QUESTIONS.length);
+            currentQuiz = GAME_CONSTANTS.QUIZ_QUESTIONS[quizIndex];
+            gameState.quizTotal++;
+            
+            // Display quiz question
+            elements.quizQuestion.textContent = currentQuiz.question;
+            
+            // Clear previous options
+            elements.quizOptions.innerHTML = '';
+            
+            // Add options
+            currentQuiz.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'w-full text-left p-3 rounded-lg bg-blue-100 hover:bg-blue-200 transition-colors';
+                button.textContent = option;
+                button.addEventListener('click', () => checkQuizAnswer(index));
+                elements.quizOptions.appendChild(button);
+            });
+            
+            // Hide feedback and next button
+            elements.quizFeedback.classList.add('hidden');
+            document.getElementById('next-question-btn').classList.add('hidden');
+            
+            // Show quiz screen
+            showScreen('quiz');
+            
+            // Play quiz sound
+            if (gameState.soundEnabled) {
+                elements.quizSound.currentTime = 0;
+                elements.quizSound.play();
+            }
+        }
+
+        function checkQuizAnswer(selectedIndex) {
+            // Disable all buttons
+            const buttons = elements.quizOptions.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.disabled = true;
+                button.classList.add('opacity-70');
+            });
+            
+            // Check if answer is correct
+            const isCorrect = selectedIndex === currentQuiz.correctAnswer;
+            
+            // Update game state
+            gameState.quizAnswered++;
+            if (isCorrect) {
+                gameState.quizCorrect++;
+                gameState.score += 20; // Bonus points for correct answer
+            }
+            
+            // Show feedback
+            elements.quizFeedback.textContent = isCorrect ? 
+                `Correct! ${currentQuiz.explanation}` : 
+                `Incorrect. ${currentQuiz.explanation}`;
+            
+            elements.quizFeedback.className = isCorrect ? 
+                'mb-4 p-3 rounded-lg bg-green-100 text-green-800' : 
+                'mb-4 p-3 rounded-lg bg-red-100 text-red-800';
+            
+            elements.quizFeedback.classList.remove('hidden');
+            
+            // Show next button
+            document.getElementById('next-question-btn').classList.remove('hidden');
+            
+            // Play sound
+            if (gameState.soundEnabled) {
+                if (isCorrect) {
+                    elements.successSound.currentTime = 0;
+                    elements.successSound.play();
+                } else {
+                    elements.hurtSound.currentTime = 0;
+                    elements.hurtSound.play();
+                }
+            }
+            
+            // Update UI
+            updateUI();
+        }
+
+        function skipQuiz() {
+            currentQuiz = null;
+            gameState.gameRunning = true;
+            showScreen('game');
+            lastTime = Date.now();
+            gameLoop();
+        }
+
+        function nextQuestion() {
+            currentQuiz = null;
+            gameState.gameRunning = true;
+            showScreen('game');
+            lastTime = Date.now();
+            gameLoop();
+        }
+
+        function togglePause() {
+            gameState.gameRunning = !gameState.gameRunning;
+            
+            if (gameState.gameRunning) {
+                // Resume game
+                elements.gameOverlay.classList.add('hidden');
+                lastTime = Date.now();
+                gameLoop();
+            } else {
+                // Pause game
+                elements.gameOverlay.classList.remove('hidden');
+                cancelAnimationFrame(animationFrameId);
+            }
+        }
+
+        function restartGame() {
+            elements.gameOverlay.classList.add('hidden');
+            clearInterval(timeInterval);
+            startGame();
+        }
+
+        function toggleSound() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            
+            const soundBtn = document.getElementById('sound-btn');
+            if (gameState.soundEnabled) {
+                soundBtn.innerHTML = '<i class="fa fa-volume-up mr-1"></i> Sound On';
+                elements.bgMusic.play();
+            } else {
+                soundBtn.innerHTML = '<i class="fa fa-volume-off mr-1"></i> Sound Off';
+                elements.bgMusic.pause();
+            }
+        }
+
+        function endGame() {
+            // Stop game
+            gameState.gameRunning = false;
+            cancelAnimationFrame(animationFrameId);
+            clearInterval(timeInterval);
+            
+            // Stop music
+            elements.bgMusic.pause();
+            
+            // Update game over screen
+            elements.finalScore.textContent = gameState.score;
+            elements.timeSurvived.textContent = 60 - gameState.time;
+            elements.foodCollected.textContent = gameState.foodCollected;
+            elements.quizAnswered.textContent = gameState.quizCorrect;
+            elements.quizTotal.textContent = gameState.quizTotal;
+            
+            // Show game over screen
+            showScreen('gameOver');
+        }
+
+        function updateUI() {
+            // Update score display
+            elements.scoreDisplay.textContent = gameState.score;
+            
+            // Update health bar
+            elements.healthBar.style.width = `${gameState.health}%`;
+            
+            // Change health bar color based on health level
+            if (gameState.health > 60) {
+                elements.healthBar.className = 'h-full bg-secondary rounded-full';
+            } else if (gameState.health > 30) {
+                elements.healthBar.className = 'h-full bg-yellow-500 rounded-full';
+            } else {
+                elements.healthBar.className = 'h-full bg-danger rounded-full';
+            }
+            
+            // Update time display
+            elements.timeDisplay.textContent = gameState.time;
+        }
+
+        // Initialize the game when the page loads
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
